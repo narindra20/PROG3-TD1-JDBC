@@ -6,26 +6,16 @@ import models.Product;
 
 import java.sql.*;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
 public class DataRetriever {
 
-    DBConnection db = new DBConnection();
+    private DBConnection db = new DBConnection();
 
-    // Petit utilitaire
-    public static Instant createInstant(int year, int month, int day) {
-        return LocalDateTime.of(year, month, day, 0, 0).toInstant(ZoneOffset.UTC);
-    }
-
-    public static Instant createInstant(int year, int month, int day, int hour, int min) {
-        return LocalDateTime.of(year, month, day, hour, min).toInstant(ZoneOffset.UTC);
-    }
-
+    //QUESTION 1
     public List<Category> getAllCategories() throws SQLException {
-        List<Category> list = new ArrayList<>();
+        List<Category> categories = new ArrayList<>();
         String sql = "SELECT id, name FROM product_category";
 
         try (Connection conn = db.getDBConnection();
@@ -33,25 +23,24 @@ public class DataRetriever {
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
-                list.add(new Category(
+                Category category = new Category(
                         rs.getInt("id"),
                         rs.getString("name")
-                ));
+                );
+                categories.add(category);
             }
         }
-        return list;
+        return categories;
     }
 
-    public List<Product> getProductList(int page, int size) throws SQLException {
-        List<Product> list = new ArrayList<>();
 
+    //QUESTION 2
+    public List<Product> getProductList(int page, int size) throws SQLException {
+        List<Product> products = new ArrayList<>();
         int offset = (page - 1) * size;
-        String sql = """
-                SELECT id, name, price, creation_datetime
-                FROM product
-                ORDER BY id
-                LIMIT ? OFFSET ?
-                """;
+
+        String sql = "SELECT id, name, price, creation_datetime " +
+                "FROM product ORDER BY id LIMIT ? OFFSET ?";
 
         try (Connection conn = db.getDBConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -61,85 +50,104 @@ public class DataRetriever {
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    Product p = new Product(
+                    Product product = new Product(
                             rs.getInt("id"),
                             rs.getString("name"),
                             rs.getDouble("price"),
                             rs.getTimestamp("creation_datetime").toInstant()
                     );
-                    list.add(p);
+                    products.add(product);
                 }
             }
         }
-        return list;
+        return products;
     }
 
+    //QUESTION 3
+    public List<Product> getProductsByCriteria(
+            String productName,
+            String categoryName,
+            Instant creationMin,
+            Instant creationMax
+    ) throws SQLException {
+
+        return getProductsByCriteria(productName, categoryName, creationMin, creationMax, 1, Integer.MAX_VALUE);
+    }
+
+    //QUESTION 4
     public List<Product> getProductsByCriteria(
             String productName,
             String categoryName,
             Instant creationMin,
             Instant creationMax,
             int page,
-            int size) throws SQLException {
+            int size
+    ) throws SQLException {
 
-        List<Product> list = new ArrayList<>();
+        List<Product> products = new ArrayList<>();
+        int offset = (page - 1) * size;
 
-        StringBuilder sql = new StringBuilder("""
-            SELECT DISTINCT p.id, p.name, p.price, p.creation_datetime
-            FROM product p
-            LEFT JOIN product_category pc ON pc.product_id = p.id
-        """);
+        StringBuilder sqlBuilder = new StringBuilder(
+                "SELECT p.id, p.name, p.price, p.creation_datetime " +
+                        "FROM product p " +
+                        "LEFT JOIN product_category pc ON p.id = pc.product_id"
+        );
 
-        List<Object> values = new ArrayList<>();
+        List<Object> parameters = new ArrayList<>();
         List<String> conditions = new ArrayList<>();
 
         if (productName != null) {
             conditions.add("p.name ILIKE ?");
-            values.add("%" + productName + "%");
+            parameters.add("%" + productName + "%");
         }
+
         if (categoryName != null) {
             conditions.add("pc.name ILIKE ?");
-            values.add("%" + categoryName + "%");
+            parameters.add("%" + categoryName + "%");
         }
+
         if (creationMin != null) {
             conditions.add("p.creation_datetime >= ?");
-            values.add(Timestamp.from(creationMin));
+            parameters.add(Timestamp.from(creationMin));
         }
+
         if (creationMax != null) {
             conditions.add("p.creation_datetime <= ?");
-            values.add(Timestamp.from(creationMax));
+            parameters.add(Timestamp.from(creationMax));
         }
 
         if (!conditions.isEmpty()) {
-            sql.append(" WHERE ").append(String.join(" AND ", conditions));
+            sqlBuilder.append(" WHERE ").append(String.join(" AND ", conditions));
         }
 
-        sql.append(" ORDER BY p.id LIMIT ? OFFSET ?");
+        sqlBuilder.append(" ORDER BY p.id LIMIT ? OFFSET ?");
 
         try (Connection conn = db.getDBConnection();
-             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+             PreparedStatement ps = conn.prepareStatement(sqlBuilder.toString())) {
 
-            int index = 1;
+            int idx = 1;
 
-            for (Object v : values) {
-                ps.setObject(index++, v);
+            for (Object param : parameters) {
+                ps.setObject(idx++, param);
             }
 
-            ps.setInt(index++, size);
-            ps.setInt(index, (page - 1) * size);
+            ps.setInt(idx++, size);
+            ps.setInt(idx, offset);
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    Product p = new Product(
+                    Product product = new Product(
                             rs.getInt("id"),
                             rs.getString("name"),
                             rs.getDouble("price"),
                             rs.getTimestamp("creation_datetime").toInstant()
                     );
-                    list.add(p);
+                    products.add(product);
                 }
             }
         }
-        return list;
+        return products;
     }
 }
+
+
