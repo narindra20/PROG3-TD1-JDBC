@@ -74,7 +74,8 @@ public class Main {
         printProducts(result5);
     }
 
-    private static void testCriteriaWithPagination(DataRetriever retriever) {
+    // 👉 CORRECTION ICI (ajout de throws SQLException)
+    private static void testCriteriaWithPagination(DataRetriever retriever) throws SQLException {
         System.out.println("\n1. Tous les produits (page 1, taille 10):");
         List<Product> result1 = retriever.getProductsByCriteria(null, null, null, null, 1, 10);
         printProducts(result1);

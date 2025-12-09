@@ -1,45 +1,39 @@
 package models;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
-public class Product{
-    public int id;
-    public String name;
-    public Instant creationDateTime;
-    public Category category;
+public class Product {
 
-    public Product(int id, String name, double creationDateTime, Instant category){
+    private int id;
+    private String name;
+    private double price;
+    private Instant creationDateTime;
+    private List<Category> categories = new ArrayList<>();
+
+    public Product(int id, String name, double price, Instant creationDateTime) {
         this.id = id;
         this.name = name;
+        this.price = price;
         this.creationDateTime = creationDateTime;
-        this.category = category;
     }
 
-    public int getId() {
-        return id;
+    public int getId() { return id; }
+    public String getName() { return name; }
+    public double getPrice() { return price; }
+    public Instant getCreationDateTime() { return creationDateTime; }
+
+    public List<Category> getCategories() {
+        return categories;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public Instant getCreationDateTime() {
-        return creationDateTime;
-    }
-
-    public Category getCategory() {
-        return category;
-    }
-
-    public String getCategoryName(){
-        if (category == null) return null;
-        return category.name;
+    public void addCategory(Category c) {
+        categories.add(c);
     }
 
     @Override
-    public String toString(){
-        return id + '-' + name + '-' + creationDateTime + " Category : " + getCategoryName();
+    public String toString() {
+        return id + "-" + name + "-" + price + "-" + creationDateTime + " Categories: " + categories;
     }
-
 }
-

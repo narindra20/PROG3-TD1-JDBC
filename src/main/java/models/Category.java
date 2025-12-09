@@ -1,26 +1,19 @@
 package models;
 
 public class Category {
-    public int id;
-    public String name;
+    private int id;
+    private String name;
 
-
-    public Category(int id, String name, int productId){
+    public Category(int id, String name){
         this.id = id;
         this.name = name;
     }
 
-    public int getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
+    public int getId() { return id; }
+    public String getName() { return name; }
 
     @Override
-    public String toString(){
+    public String toString() {
         return id + "-" + name;
     }
 }
-
